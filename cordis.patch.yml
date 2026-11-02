@@ -1,0 +1,30 @@
+# BTW side questions: answers a question from the current session transcript
+# with one direct model call (no tools, no Agent loop, no session events) and
+# keeps the result in its own store.
+#
+# Every value below is only the default a fresh install starts from; override
+# it in this profile's cordis.patch.yml under the same row id.
+- insert:
+    - id: dsh-plugin-btw
+      name: '@local/dsh-plugin-btw'
+      config:
+        # Empty provider/model follows the current session's model.
+        provider: ''
+        model: ''
+        # Empty effort uses the provider default instead of inheriting the
+        # session's (usually "max") effort, so a side question stays quick.
+        reasoningEffort: ''
+        # No plugin-side output cap: the provider/model decides. A provider
+        # that still stops on its own limit is recorded as truncated.
+        # Characters of committed transcript sent with each question.
+        contextChars: 48000
+        # Per tool-result cap inside that transcript.
+        toolResultChars: 3000
+        includeSystemPrompt: false
+        includeDeveloper: false
+        storeReasoning: true
+        maxEntries: 200
+        questionMaxChars: 4000
+        timeoutMs: 120000
+        # Empty uses $DSH_HOME/storages/btw.
+        storeDir: ''

@@ -1,0 +1,52 @@
+{
+  "name": "@local/dsh-plugin-btw",
+  "version": "0.1.0",
+  "private": true,
+  "description": "BTW side questions over the current DeepSeek Harness session: no tools, no interruption, no context pollution, with a browsable history page.",
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "plugin",
+    "btw",
+    "side-question"
+  ],
+  "author": "kix6lj",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kix6lj/dsh-btw.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kix6lj/dsh-btw/issues"
+  },
+  "homepage": "https://github.com/kix6lj/dsh-btw#readme",
+  "type": "module",
+  "main": "index.mjs",
+  "icon": "./icon.svg",
+  "exports": {
+    ".": "./index.mjs",
+    "./client": "./client.js",
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json"
+  },
+  "files": [
+    "index.mjs",
+    "client.js",
+    "cordis.patch.yml",
+    "icon.svg",
+    "locale/*.json",
+    "README.md"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-commands"
+      ]
+    }
+  }
+}

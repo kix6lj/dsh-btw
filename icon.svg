@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="BTW">
+  <rect width="64" height="64" rx="15" fill="#12203a"/>
+  <path d="M32 11C19.8 11 10 19.9 10 30.9c0 5.9 2.9 11.2 7.6 14.8V55l9.1-5.4c1.7.4 3.4.6 5.3.6 12.2 0 22-8.9 22-19.8S44.2 11 32 11Z" fill="#2f6feb"/>
+  <circle cx="22.5" cy="31" r="2.6" fill="#ffffff"/>
+  <circle cx="32" cy="31" r="2.6" fill="#ffffff"/>
+  <circle cx="41.5" cy="31" r="2.6" fill="#ffffff"/>
+</svg>
