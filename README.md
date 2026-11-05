@@ -94,8 +94,9 @@ DSH 的客户端 slash 命令只支持裸调用，带参数必须由 Host 命令
 [assistant] ...
 ```
 
-- 默认跳过 `system` / `developer` 消息；`includeSystemPrompt`、`includeDeveloper` 可打开。
-- 工具结果默认单条 3k 字符、总量 48k 字符；超出从最早开始丢弃并标注「更早的会话内容已省略」。
+- 默认包含主 agent 的 **system prompt** 与 **developer 消息**（`includeSystemPrompt`、`includeDeveloper`），它们作为只读上下文标注为 `[system]` / `[developer]`，不是给旁问模型的指令。
+- 默认**不设字符预算、不截断工具结果**：完整发送 `deriveMessages()` 的全部消息。只有显式把 `contextChars` / `toolResultChars` 设为正数才会裁剪；即使设了预算，**所有 user 消息与 system prompt 永远保留**，只在中间省略较早的工具/助手内容并标注「较早的部分内容已省略」。
+- 完整上下文 = 主模型当前可见的派生消息（含 system/developer）；如果主会话发生过压缩，这里反映的是压缩后的视图，而不是原始日志全量。
 - 图片/附件只留占位符；推理块不进入上下文。
 - 当前 turn 尚未落盘的流式文本不在上下文内。
 - 请求形态：`system` = BTW 规则 + `<session_transcript>`；`messages` = 单条用户问题；**不传 `tools`**，从机制上禁止工具调用。
@@ -129,10 +130,10 @@ $DSH_HOME/storages/btw/sessions/<sessionId>.json
     provider: ''
     model: ''
     reasoningEffort: ''
-    contextChars: 48000
-    toolResultChars: 3000
-    includeSystemPrompt: false
-    includeDeveloper: false
+    contextChars: 0
+    toolResultChars: 0
+    includeSystemPrompt: true
+    includeDeveloper: true
     storeReasoning: true
     maxEntries: 200
     questionMaxChars: 4000
@@ -144,10 +145,10 @@ $DSH_HOME/storages/btw/sessions/<sessionId>.json
 |---|---|---|
 | `provider` / `model` | `''` | 空 = 跟随当前会话 |
 | `reasoningEffort` | `''` | 空 = provider 默认 |
-| `contextChars` | `48000` | transcript 总预算（字符） |
-| `toolResultChars` | `3000` | 单条工具结果上限 |
-| `includeSystemPrompt` | `false` | 是否把主系统提示带进 transcript |
-| `includeDeveloper` | `false` | 是否带 developer 消息 |
+| `contextChars` | `0` | `0` = 完整上下文；正数 = 软预算（user 消息与 system prompt 始终保留） |
+| `toolResultChars` | `0` | `0` = 工具结果不截断；正数 = 单条上限 |
+| `includeSystemPrompt` | `true` | 是否把主系统提示带进 transcript |
+| `includeDeveloper` | `true` | 是否带 developer 消息 |
 | `storeReasoning` | `true` | 是否持久化推理过程 |
 | `maxEntries` | `200` | 每会话历史上限 |
 | `questionMaxChars` | `4000` | 问题长度上限 |
@@ -192,7 +193,8 @@ test/               无浏览器自测
 
 - 需要 DSH Web profile；Client 半依赖 `slots` / `locale` / `layout` / `commandUi`。
 - 当前 turn 未落盘的部分不在上下文内。
-- 旁问会额外消耗一次模型调用，并与主会话共享 provider 限流。
+- 默认发送完整上下文，长会话的输入 token 会显著增加；需要控制成本时把 `contextChars` 设为正数（用户消息仍会保留）。
+- 旁问会额外消耗一次模型调用，并与主会话共享 provider 限流；默认完整上下文会放大这部分输入成本。
 - 插件不设置输出上限；若 provider 自身仍截断，历史页会明确标记「已截断」。
 - 带参数的 `/btw 问题` 会在 session 日志留下两条 log-only 事件（见上文）。
 - 历史上限按会话计；清空/删除只影响本插件自己的数据。

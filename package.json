@@ -1,6 +1,6 @@
 {
   "name": "@local/dsh-plugin-btw",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "BTW side questions over the current DeepSeek Harness session: no tools, no interruption, no context pollution, with a browsable history page.",
   "keywords": [

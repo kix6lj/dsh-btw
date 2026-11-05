@@ -128,21 +128,24 @@ const workspace = await mkdtemp(join(tmpdir(), 'dsh-btw-test-'))
 
 try {
   // --- transcript shape -----------------------------------------------------
-  const transcript = buildTranscript(createSession(), normalizeConfig({ contextChars: 40000 }))
+  // Defaults are the complete derived context, including the recorded system
+  // prompt and developer messages, with no budget.
+  const transcript = buildTranscript(createSession(), normalizeConfig({}))
   assert.match(transcript.text, /\[environment\] cwd: \/work\/demo/)
+  assert.match(transcript.text, /\[system\] SYSTEM PROMPT/)
+  assert.match(transcript.text, /\[developer\] DEVELOPER CONTEXT/)
   assert.match(transcript.text, /\[user\] 请读一下 config\.toml/)
   assert.match(transcript.text, /\[tool result: read\] port = 8080/)
   assert.match(transcript.text, /\[assistant\] 配置文件里的端口是 8080。/)
-  assert.doesNotMatch(transcript.text, /SYSTEM PROMPT/)
-  assert.doesNotMatch(transcript.text, /DEVELOPER CONTEXT/)
   assert.equal(transcript.stats.toolResults, 1)
+  assert.equal(transcript.stats.truncated, false)
 
-  const withSystem = buildTranscript(
+  const excluded = buildTranscript(
     createSession(),
-    normalizeConfig({ includeSystemPrompt: true, includeDeveloper: true }),
+    normalizeConfig({ includeSystemPrompt: false, includeDeveloper: false }),
   )
-  assert.match(withSystem.text, /SYSTEM PROMPT/)
-  assert.match(withSystem.text, /DEVELOPER CONTEXT/)
+  assert.doesNotMatch(excluded.text, /SYSTEM PROMPT/)
+  assert.doesNotMatch(excluded.text, /DEVELOPER CONTEXT/)
 
   const longTool = createSession({
     deriveMessages: () => [
@@ -152,10 +155,31 @@ try {
       message('assistant', [{ type: 'text', text: '读完了。' }]),
     ],
   })
+  const full = buildTranscript(longTool, normalizeConfig({}))
+  assert.equal(full.stats.truncated, false)
+  assert.ok(full.text.includes('A'.repeat(6000)), 'default context keeps the full tool result')
+
+  // A positive budget trims the middle but never drops the user's messages.
+  const manyMessages = [message('user', [{ type: 'text', text: '最初的需求：实现目录插件' }])]
+  for (let index = 0; index < 12; index += 1) {
+    manyMessages.push(
+      message('assistant', [{ type: 'tool-call', id: `call-${index}`, name: 'read', arguments: '{}' }]),
+      message('tool', [{ type: 'text', text: `R${index}:` + 'x'.repeat(2000) }], {
+        toolCallId: `call-${index}`,
+      }),
+    )
+  }
+  const manySession = createSession({ deriveMessages: () => manyMessages })
+  const bounded = buildTranscript(manySession, normalizeConfig({ contextChars: 4000 }))
+  assert.match(bounded.text, /最初的需求/)
+  assert.equal(bounded.stats.truncated, true)
+  assert.match(bounded.text, /已省略/)
+
   const truncated = buildTranscript(longTool, normalizeConfig({ contextChars: 2000, toolResultChars: 3000 }))
   assert.equal(truncated.stats.truncated, true)
-  assert.match(truncated.text, /已省略/)
-  assert.ok(truncated.stats.chars <= 2100, `expected a bounded transcript, got ${truncated.stats.chars}`)
+  assert.match(truncated.text, /读大文件/)
+  assert.match(truncated.text, /已截断/)
+  assert.ok(truncated.stats.chars <= 2200, `expected a bounded transcript, got ${truncated.stats.chars}`)
 
   // --- model resolution -----------------------------------------------------
   const config = normalizeConfig({})
@@ -211,7 +235,7 @@ try {
   assert.equal(streamOptions.tools, undefined)
   assert.match(streamOptions.system, /<session_transcript>/)
   assert.match(streamOptions.system, /port = 8080/)
-  assert.doesNotMatch(streamOptions.system, /SYSTEM PROMPT/)
+  assert.match(streamOptions.system, /SYSTEM PROMPT/)
   assert.deepEqual(streamOptions.messages, [
     { role: 'user', content: [{ type: 'text', text: '配置文件的端口是多少？' }] },
   ])

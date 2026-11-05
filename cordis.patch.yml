@@ -16,12 +16,16 @@
         reasoningEffort: ''
         # No plugin-side output cap: the provider/model decides. A provider
         # that still stops on its own limit is recorded as truncated.
-        # Characters of committed transcript sent with each question.
-        contextChars: 48000
-        # Per tool-result cap inside that transcript.
-        toolResultChars: 3000
-        includeSystemPrompt: false
-        includeDeveloper: false
+        # 0 = the entire derived context (no character budget). A positive
+        # value trims old tool/assistant blocks but always keeps every user
+        # message and the recorded system prompt.
+        contextChars: 0
+        # 0 = keep every tool result in full.
+        toolResultChars: 0
+        # Include what the main agent saw: its recorded system prompt and any
+        # developer messages. They are quoted context, not instructions.
+        includeSystemPrompt: true
+        includeDeveloper: true
         storeReasoning: true
         maxEntries: 200
         questionMaxChars: 4000
